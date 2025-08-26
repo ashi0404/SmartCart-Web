@@ -1,0 +1,13 @@
+
+# macOS
+.DS_Store
+
+# Python
+_pycache_/
+*.pyc
+.venv/
+venv/
+
+# Large data & artifacts
+data/
+artifacts/

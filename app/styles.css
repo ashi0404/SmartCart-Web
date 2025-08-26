@@ -1,0 +1,141 @@
+/* =====================
+   Global light theme
+   ===================== */
+:root {
+  --white: #ffffff;
+  --black: #0b0b0c;
+  --muted: #50545c;
+  --blue: #1f77ff;
+  --red: #e53935;
+  --card: #ffffff;
+  --border: #e6e6e6;
+  --shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+/* Optional pastel backdrop */
+html, body {
+  background: linear-gradient(135deg, #fdf5f5, #f0f8ff, #fff5f8, #f5f9ff) !important;
+  background-attachment: fixed;
+  background-size: cover;
+  color: var(--black) !important;
+}
+
+/* Remove any Streamlit headers/decoration banding */
+[data-testid="stAppViewContainer"] { color: var(--black) !important; }
+[data-testid="stDecoration"], .stApp header, [data-testid="stToolbar"] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+  background: var(--white) !important;
+  color: var(--black) !important;
+  border-right: 1px solid var(--border) !important;
+}
+section[data-testid="stSidebar"] * { color: var(--black) !important; }
+
+/* Sidebar brand */
+.brand-side {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  margin: 6px 0 14px 2px;
+}
+.brand-blue { color: var(--blue); }
+.brand-red  { color: var(--red); }
+
+/* Center brand title (main) */
+.brand-center { text-align: center; margin: 10px 0 16px; font-weight: 900; }
+.brand-center .brand-blue { color: var(--blue); }
+.brand-center .brand-red  { color: var(--red); }
+
+/* Headings */
+.page-h2 { font-size: 28px; font-weight: 800; color: var(--black); margin: 4px 0 12px; }
+.page-h3 { font-size: 22px; font-weight: 800; color: var(--black); margin-top: 10px; }
+.page-h4 { font-size: 18px; font-weight: 700; color: var(--black); }
+
+/* Divider */
+.rule { border: none; height: 1px; background: var(--border); margin: 18px 0; }
+
+/* Inputs and buttons */
+.stTextInput > div > div,
+.stMultiSelect > div > div,
+.stSelectbox > div > div,
+.stNumberInput > div > div,
+.stDateInput > div > div {
+  background: #fafafa !important;
+  color: var(--black) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--shadow) !important;
+}
+.stMultiSelect div[data-baseweb="tag"] {
+  background: #f2f2f2 !important;
+  color: var(--black) !important;
+  border: 1px solid var(--border) !important;
+}
+
+div[role="listbox"], ul[role="listbox"] {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.10) !important;
+  border-radius: 10px !important;
+}
+div[role="option"], ul[role="listbox"] li {
+  background: #ffffff !important; color: #000000 !important;
+}
+div[role="option"][aria-selected="true"] {
+  background: #f1f5ff !important; color: #000000 !important;
+}
+
+/* Buttons */
+button[kind="secondary"], .stButton button {
+  background: #ffffff !important;
+  color: var(--black) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--shadow) !important;
+}
+.stButton button:hover { transform: translateY(-1px); }
+
+/* Top badges shown for selected items */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px; margin: 4px 8px 8px 0;
+  background: #fff; color: var(--black);
+  border: 1px solid var(--border);
+  border-radius: 999px; box-shadow: var(--shadow);
+  font-weight: 600;
+}
+
+/* Recommendation card */
+.reco-card {
+  position: relative;
+  background: var(--card);
+  color: var(--black);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 14px 14px 18px;
+  min-height: 150px;
+}
+.reco-rank {
+  position: absolute; top: -12px; left: -12px;
+  height: 42px; width: 42px; border-radius: 50%;
+  display: grid; place-items: center;
+  color: #000 !important; font-weight: 800;
+  border: 3px solid #fff; box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+.reco-rank-1 { background: linear-gradient(135deg, #ffec99, #e6b800); }
+.reco-rank-2 { background: linear-gradient(135deg, #dee2e6, #9aa0a6); }
+.reco-rank-3 { background: linear-gradient(135deg, #ffd8a8, #e07a1f); }
+.reco-title { font-size: 18px; font-weight: 800; margin: 6px 0 4px; color: var(--black); }
+.reco-sub { font-size: 13px; font-weight: 600; color: var(--muted); }
+
+/* Tables / DF */
+.block-container, .stDataFrame, .stTable, .element-container {
+  color: var(--black) !important; background: transparent !important;
+}
