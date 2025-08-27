@@ -9,6 +9,17 @@ ART_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "artifacts")
 
 def ensure_dirs():
     os.makedirs(ART_DIR, exist_ok=True)
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+def _load_large_csv(path: str, chunksize: int = 200000) -> pd.DataFrame:
+    """
+    Load CSV in chunks to handle very large files (>700MB).
+    Returns concatenated DataFrame.
+    """
+    dfs = []
+    for chunk in pd.read_csv(path, chunksize=chunksize):
+        dfs.append(chunk)
+    return pd.concat(dfs, ignore_index=True)
 
 def load_csvs() -> dict:
     paths = {
@@ -21,7 +32,8 @@ def load_csvs() -> dict:
     for key, p in paths.items():
         if not os.path.exists(p):
             raise FileNotFoundError(f"Missing required CSV: {p}")
-        dfs[key] = pd.read_csv(p)
+        # ✅ Use chunked reading for huge files
+        dfs[key] = _load_large_csv(p)
     return dfs
 
 NON_ITEMS = ["memo", "blankline", "asap", "order"]
@@ -77,12 +89,10 @@ def build_items_and_tags(order_df: pd.DataFrame) -> tuple[dict, dict, dict, list
     order_df = order_df.copy()
     order_df["ITEM_LIST"] = order_df["ORDERS"].apply(extract_item_names).apply(clean_item_list)
 
-    # all unique items
     all_items = sorted({it for row in order_df["ITEM_LIST"] for it in row})
     item_type_dict = {it: tag_item_type(it) for it in all_items}
     item_feature_dict = {it: extract_item_features(it) for it in all_items}
 
-    # frequencies per item & top by type
     cnt = Counter([it for row in order_df["ITEM_LIST"] for it in row])
     top_items_by_type = defaultdict(list)
     for item, c in cnt.items():
@@ -95,7 +105,6 @@ def build_items_and_tags(order_df: pd.DataFrame) -> tuple[dict, dict, dict, list
     return item_type_dict, item_feature_dict, top_items_by_type, all_items
 
 def build_normalized_comatrix(order_df: pd.DataFrame, sample_n: Optional[int] = None) -> dict:
-    """Build normalized co-occurrence: P(j|i) ~ count(i->j)/count(i)."""
     if sample_n:
         order_df = order_df.sample(n=min(sample_n, len(order_df)), random_state=42)
 
