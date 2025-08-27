@@ -106,24 +106,38 @@ def prepare_artifacts(sample_n: Optional[int]):
     if not os.path.exists(order_path):
         st.error("Please upload order_data.csv first in Start page.")
         return None
-    order = pd.read_csv(order_path, chunksize=200000)  # ✅ large-file safe
+
+    # ✅ Safe large file read
+    order = pd.read_csv(order_path, chunksize=200000)
     order = pd.concat(order, ignore_index=True)
 
-    # ✅ FIX: Handle column case sensitivity
-    colnames = [c.lower() for c in order.columns]
-    if "orders" not in colnames:
-        raise KeyError(f"Expected column 'ORDERS' not found. Found: {list(order.columns)}")
-    orders_col = order.columns[colnames.index("orders")]
+    # ✅ Check required item columns
+    required_cols = ["item1", "item2", "item3"]
+    missing = [c for c in required_cols if c not in order.columns]
+    if missing:
+        raise KeyError(f"Missing required columns: {missing}. Found: {list(order.columns)}")
 
-    order["ITEM_LIST"] = order[orders_col].apply(extract_item_names).apply(clean_item_list)
+    # ✅ Build ITEM_LIST by joining non-null items
+    order["ITEM_LIST"] = order[required_cols].astype(str).agg(", ".join, axis=1)
+    order["ITEM_LIST"] = order["ITEM_LIST"].apply(extract_item_names).apply(clean_item_list)
+
+    # ✅ Build artifacts
     item_type, item_feat, top_by_type, all_items = build_items_and_tags(order)
     co_norm = build_normalized_comatrix(order, sample_n=sample_n)
 
     known_lower = {itm.lower(): itm for itm in all_items}
-    art = {"item_type": item_type,"item_feat": item_feat,"top_by_type": top_by_type,
-           "co_norm": co_norm,"known_items_lower": list(known_lower.keys()),"lower_to_orig": known_lower}
+    art = {
+        "item_type": item_type,
+        "item_feat": item_feat,
+        "top_by_type": top_by_type,
+        "co_norm": co_norm,
+        "known_items_lower": list(known_lower.keys()),
+        "lower_to_orig": known_lower
+    }
+
     save_artifact("artifacts.pkl", art)
     return art
+
 
 def load_or_build_artifacts():
     art = load_artifact("artifacts.pkl")
