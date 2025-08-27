@@ -1,4 +1,4 @@
-import os
+import os, io, requests
 import streamlit as st
 import pandas as pd
 from collections import Counter
@@ -82,13 +82,30 @@ def save_uploaded_file(uploaded_file, filename):
         f.write(uploaded_file.getbuffer())
     return out_path
 
+def download_from_gdrive(url: str, filename: str):
+    """Download CSV from Google Drive link and save to DATA_DIR."""
+    try:
+        file_id = url.split("/d/")[1].split("/")[0]
+        download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+        r = requests.get(download_url)
+        r.raise_for_status()
+        os.makedirs(DATA_DIR, exist_ok=True)
+        out_path = os.path.join(DATA_DIR, filename)
+        with open(out_path, "wb") as f:
+            f.write(r.content)
+        return out_path
+    except Exception as e:
+        st.error(f"Failed to fetch from Google Drive: {e}")
+        return None
+
 @st.cache_data(show_spinner=True)
 def prepare_artifacts(sample_n: Optional[int]):
     order_path = os.path.join(DATA_DIR, "order_data.csv")
     if not os.path.exists(order_path):
         st.error("Please upload order_data.csv first in Start page.")
         return None
-    order = pd.read_csv(order_path)
+    order = pd.read_csv(order_path, chunksize=200000)  # ✅ large-file safe
+    order = pd.concat(order, ignore_index=True)
 
     order["ITEM_LIST"] = order["ORDERS"].apply(extract_item_names).apply(clean_item_list)
     item_type, item_feat, top_by_type, all_items = build_items_and_tags(order)
@@ -111,20 +128,37 @@ def load_or_build_artifacts():
 def start_page():
     app_brand_title()
     st.markdown("<h2 class='page-h2'>Welcome</h2>", unsafe_allow_html=True)
-    st.write("Upload required CSV files (large files >700MB are supported).")
+    st.write("Upload required CSV files or paste Google Drive links (large files >700MB are supported).")
 
+    # Uploaders
     uploaded_order = st.file_uploader("Upload order_data.csv", type="csv")
+    gdrive_order = st.text_input("Or paste Google Drive link for order_data.csv")
+
     uploaded_customer = st.file_uploader("Upload customer_data.csv", type="csv")
+    gdrive_customer = st.text_input("Or paste Google Drive link for customer_data.csv")
+
     uploaded_store = st.file_uploader("Upload store_data.csv", type="csv")
+    gdrive_store = st.text_input("Or paste Google Drive link for store_data.csv")
+
     uploaded_test = st.file_uploader("Upload test_data_question.csv", type="csv")
+    gdrive_test = st.text_input("Or paste Google Drive link for test_data_question.csv")
 
+    # Save logic
     if uploaded_order: save_uploaded_file(uploaded_order, "order_data.csv")
-    if uploaded_customer: save_uploaded_file(uploaded_customer, "customer_data.csv")
-    if uploaded_store: save_uploaded_file(uploaded_store, "store_data.csv")
-    if uploaded_test: save_uploaded_file(uploaded_test, "test_data_question.csv")
+    elif gdrive_order: download_from_gdrive(gdrive_order, "order_data.csv")
 
-    if all([uploaded_order, uploaded_customer, uploaded_store, uploaded_test]):
-        st.success("✅ All files uploaded and saved under data/")
+    if uploaded_customer: save_uploaded_file(uploaded_customer, "customer_data.csv")
+    elif gdrive_customer: download_from_gdrive(gdrive_customer, "customer_data.csv")
+
+    if uploaded_store: save_uploaded_file(uploaded_store, "store_data.csv")
+    elif gdrive_store: download_from_gdrive(gdrive_store, "store_data.csv")
+
+    if uploaded_test: save_uploaded_file(uploaded_test, "test_data_question.csv")
+    elif gdrive_test: download_from_gdrive(gdrive_test, "test_data_question.csv")
+
+    if all([os.path.exists(os.path.join(DATA_DIR, f)) for f in
+            ["order_data.csv","customer_data.csv","store_data.csv","test_data_question.csv"]]):
+        st.success("✅ All files ready under data/")
 
 def build_model_page():
     app_brand_title()

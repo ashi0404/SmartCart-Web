@@ -1,21 +1,36 @@
 from __future__ import annotations
 import json, os, pickle
 from collections import Counter, defaultdict
-from typing import Dict, List, Tuple, Iterable, Optional
+from typing import Optional
 import pandas as pd
 
+# --- Directories ---
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 ART_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "artifacts")
+
+# --- Max file size (in bytes) = 700 MB ---
+MAX_FILE_SIZE = 700 * 1024 * 1024
 
 def ensure_dirs():
     os.makedirs(ART_DIR, exist_ok=True)
     os.makedirs(DATA_DIR, exist_ok=True)
 
+def _check_file_size(path: str):
+    """Raise error if file exceeds max size."""
+    size = os.path.getsize(path)
+    if size > MAX_FILE_SIZE:
+        raise ValueError(
+            f"File {os.path.basename(path)} is too large "
+            f"({size / (1024*1024):.2f} MB). "
+            f"Max allowed size = {MAX_FILE_SIZE / (1024*1024)} MB."
+        )
+
 def _load_large_csv(path: str, chunksize: int = 200000) -> pd.DataFrame:
     """
-    Load CSV in chunks to handle very large files (>700MB).
-    Returns concatenated DataFrame.
+    Load CSV in chunks to handle large files.
+    Enforces 700MB max file size.
     """
+    _check_file_size(path)
     dfs = []
     for chunk in pd.read_csv(path, chunksize=chunksize):
         dfs.append(chunk)
@@ -32,9 +47,10 @@ def load_csvs() -> dict:
     for key, p in paths.items():
         if not os.path.exists(p):
             raise FileNotFoundError(f"Missing required CSV: {p}")
-        # ✅ Use chunked reading for huge files
         dfs[key] = _load_large_csv(p)
     return dfs
+
+# ---------------- Item extraction logic ---------------- #
 
 NON_ITEMS = ["memo", "blankline", "asap", "order"]
 
@@ -109,7 +125,6 @@ def build_normalized_comatrix(order_df: pd.DataFrame, sample_n: Optional[int] = 
         order_df = order_df.sample(n=min(sample_n, len(order_df)), random_state=42)
 
     lists = order_df["ITEM_LIST"]
-    from collections import defaultdict
     item_count = defaultdict(int)
     pair_count = defaultdict(lambda: defaultdict(int))
 
@@ -130,6 +145,8 @@ def build_normalized_comatrix(order_df: pd.DataFrame, sample_n: Optional[int] = 
         for b, c in pair_count[a].items():
             norm[a][b] = c / denom
     return norm
+
+# ---------------- Artifacts ---------------- #
 
 def save_artifact(name: str, obj):
     ensure_dirs()
