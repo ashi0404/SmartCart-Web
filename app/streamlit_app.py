@@ -1,3 +1,5 @@
+# streamlit_app.py
+
 import os, io, requests
 import streamlit as st
 import pandas as pd
@@ -107,7 +109,13 @@ def prepare_artifacts(sample_n: Optional[int]):
     order = pd.read_csv(order_path, chunksize=200000)  # ✅ large-file safe
     order = pd.concat(order, ignore_index=True)
 
-    order["ITEM_LIST"] = order["ORDERS"].apply(extract_item_names).apply(clean_item_list)
+    # ✅ FIX: Handle column case sensitivity
+    colnames = [c.lower() for c in order.columns]
+    if "orders" not in colnames:
+        raise KeyError(f"Expected column 'ORDERS' not found. Found: {list(order.columns)}")
+    orders_col = order.columns[colnames.index("orders")]
+
+    order["ITEM_LIST"] = order[orders_col].apply(extract_item_names).apply(clean_item_list)
     item_type, item_feat, top_by_type, all_items = build_items_and_tags(order)
     co_norm = build_normalized_comatrix(order, sample_n=sample_n)
 
